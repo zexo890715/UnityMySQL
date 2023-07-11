@@ -12,7 +12,7 @@ public class MysqlControl : MonoBehaviour
     {
         try
         {
-            string connectionString = "DSN=Unity_MySQL";
+            string connectionString = "DSN=LAN";
             connection = new OdbcConnection(connectionString);
             connection.Open();
         }
@@ -50,25 +50,29 @@ public class MysqlControl : MonoBehaviour
             }
         }
     }
-    
-    public static void mysqlWrite(string id, string name)
+
+    public static bool userCheck(string name)
     {   
         mysqlOpen();
-        string query = "INSERT INTO user (id, name) VALUES (?, ?)";
+        string query = $"SELECT name FROM user WHERE name = '{name}'";
         using (OdbcCommand command = new OdbcCommand(query, connection))
         {
-            command.Parameters.AddWithValue("@id", id);
-            command.Parameters.AddWithValue("@name", name);
-            command.ExecuteNonQuery();
+            using (OdbcDataReader reader = command.ExecuteReader())
+            {
+                if (reader.HasRows)
+                {
+                    return true;
+                }
+            }
         }
+        return false;
     }
 
-    public static bool userRead(string name, string pwd)
+    public static bool pwdCheck(string name, string pwd)
     {   
         string password = null;
         mysqlOpen();
         string query = $"SELECT password FROM user WHERE name = '{name}'";
-        //Debug.Log(query);
         using (OdbcCommand command = new OdbcCommand(query, connection))
         {
             using (OdbcDataReader reader = command.ExecuteReader())
@@ -77,12 +81,65 @@ public class MysqlControl : MonoBehaviour
                 {
                     reader.Read();
                     password = reader.GetString(0);
+                    if(password == pwd)
+                        return true;
                 }
             }
         }
-        if(password == pwd)
-            return true;
-        else
-            return false;
+        return false;
+    }
+
+    public static string idGenerate()
+    {   
+        string id = "";
+        for (int i = 0; i < 8; i++)
+        {
+            int randomDigit = Random.Range(0, 10);
+            id += randomDigit.ToString();
+        }
+        return id;
+    }
+
+    public static string idCheck()
+    {   
+        string id = idGenerate();
+        bool idExists = false;
+        do
+        {
+            mysqlOpen();
+            string query = $"SELECT id FROM user WHERE id = '{id}'";
+            using (OdbcCommand command = new OdbcCommand(query, connection))
+            {
+                using (OdbcDataReader reader = command.ExecuteReader())
+                {
+                    if (reader.HasRows)
+                    {
+                        id = idGenerate();
+                        idExists = true;
+                    }
+                    else
+                    {
+                        idExists = false;
+                        return id;
+                    }
+                }
+            }
+        }
+        while(idExists);
+        return null;
+    }
+    
+    public static void userWrite(string name, string password)
+    {   
+        string id = idCheck();
+        mysqlOpen();
+        string query = "INSERT INTO user (id, name, password) VALUES (?, ?, ?)";
+        using (OdbcCommand command = new OdbcCommand(query, connection))
+        {
+            command.Parameters.AddWithValue("@id", id);
+            command.Parameters.AddWithValue("@name", name);
+            command.Parameters.AddWithValue("@password", password);
+            command.ExecuteNonQuery();
+        }
     }
 }
