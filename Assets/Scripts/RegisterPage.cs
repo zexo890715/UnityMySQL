@@ -11,22 +11,23 @@ public class RegisterPage : MonoBehaviour
 
     public void registerClick()
     {
-        if(!MysqlControl.userCheck(Username.text))
+        if (Username.text != null && Userpwd.text != null && reUserpwd.text != null)
         {
-            if(Userpwd.text == reUserpwd.text)
+            if(!MysqlControl.userCheck(Username.text))
             {
-                MysqlControl.userWrite(Username.text, Userpwd.text);
-                loginHint.text = "註冊成功";
+                if(Userpwd.text == reUserpwd.text)
+                {
+                    MysqlControl.userWrite(Username.text, Userpwd.text);
+                    loginHint.text = "註冊成功";
+                }
+                else
+                    loginHint.text = "密碼不一致";
             }
             else
-            {
-                loginHint.text = "密碼不一致";
-            }
+                loginHint.text = "使用者名稱重複";
         }
         else
-        {
-            loginHint.text = "使用者名稱重複";
-        }
+            loginHint.text = "欄位不可空白";
     }
 
     public void loginClick()
